@@ -26,3 +26,4 @@ from .storage_adapters import (
     HDF5StorageAdapter,
 )
 from .varray_adapter import LocalVArrayAdapter
+import mpi
