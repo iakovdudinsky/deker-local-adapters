@@ -34,6 +34,7 @@ from deker.types import ArrayMeta, Numeric, Slice
 from numpy import ndarray
 
 from deker_local_adapters.mixin import LocalAdapterMixin
+from mpi4py.futures import MPIPoolExecutor
 
 
 class LocalVArrayAdapter(SelfLoggerMixin, LocalAdapterMixin, BaseVArrayAdapter):
@@ -52,6 +53,15 @@ class LocalVArrayAdapter(SelfLoggerMixin, LocalAdapterMixin, BaseVArrayAdapter):
         self.collection_path = collection_path
         self.dirs = (self.data_dir, self.symlinks_dir)
         super().__init__(collection_path, ctx, executor, storage_adapter)
+
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['executor']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
     @check_ctx_state
     def read_data(self, array: "VArray", bounds: Slice) -> Union[Numeric, ndarray]:
