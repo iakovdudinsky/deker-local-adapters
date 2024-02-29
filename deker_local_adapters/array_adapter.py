@@ -62,6 +62,14 @@ class LocalArrayAdapter(SelfLoggerMixin, LocalAdapterMixin, BaseArrayAdapter):
         self.dirs = (self.data_dir, self.symlinks_dir)
         super().__init__(collection_path, ctx, executor, storage_adapter)
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['executor']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def _get_symlink_filename(
         self,
         vid: str,
@@ -219,15 +227,12 @@ class LocalArrayAdapter(SelfLoggerMixin, LocalAdapterMixin, BaseArrayAdapter):
         :param vid: VArray id
         :param collection: collection instance
         """
-
-        def _delete(array: Array) -> None:
-            array.delete()
-
         try:
-            metas = self.executor.map(self.read_meta, self._adapter_iter(vid))
+            metas = [self.read_meta(array) for array in self._adapter_iter(vid)]
             if metas:
                 arrays = [Array._create_from_meta(collection, meta, self) for meta in metas]
-                list(self.executor.map(_delete, arrays))
+                for array in arrays:
+                    array.delete()
         except Exception as e:
             self.logger.exception(e)
             raise e
